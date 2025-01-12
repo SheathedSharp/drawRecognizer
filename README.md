@@ -16,7 +16,7 @@ This is a Flask-based web application that provides two main functionalities:
 
 ## Installation
 1. Clone the repository: `git clone https://github.com/...`
-2. Install dependencies: `pip install -r requirements.txt`
+2. Install dependencies: `pip install -r requirements.txt` or `conda env create -f environment.yml`
 3. Run the application: `python run.py`
 
 ## Project Structure
