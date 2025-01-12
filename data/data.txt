@@ -1,0 +1,1 @@
+the data will be saved in the data/MNIST/raw/data.txt file

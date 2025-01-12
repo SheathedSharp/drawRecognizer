@@ -6,6 +6,11 @@ const canvas = document.getElementById("drawingCanvas");
 const ctx = canvas.getContext("2d");
 let isDrawing = false;
 
+// 设置画布背景为白色
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
 // 设置画笔样式
 ctx.strokeStyle = "black";
 ctx.lineWidth = 15;
@@ -19,7 +24,11 @@ canvas.addEventListener("mouseout", stopDrawing);
 
 function startDrawing(e) {
   isDrawing = true;
-  draw(e);
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
 }
 
 function draw(e) {
@@ -27,38 +36,40 @@ function draw(e) {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-
+  
   ctx.lineTo(x, y);
   ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y);
 }
 
 function stopDrawing() {
   isDrawing = false;
-  ctx.beginPath();
 }
 
 // 清除画布
 document.getElementById("clearBtn").addEventListener("click", () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
   document.getElementById("result").textContent = "-";
 });
 
 // 识别按钮
 document.getElementById("recognizeBtn").addEventListener("click", async () => {
+  // 获取画布数据前确保所有绘制操作已完成
+  ctx.closePath();
+  
   const imageData = canvas.toDataURL("image/png");
   try {
-    const response = await fetch("/api/recognize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ image: imageData }),
-    });
-    const data = await response.json();
-    document.getElementById("result").textContent = data.result;
+      const response = await fetch("/api/recognize", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ image: imageData }),
+      });
+      const data = await response.json();
+      document.getElementById("result").textContent = data.result;
   } catch (error) {
-    console.error("Error:", error);
+      console.error("Error:", error);
   }
 });
