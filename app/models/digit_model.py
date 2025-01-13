@@ -9,38 +9,21 @@ import numpy as np
 from PIL import Image
 import io
 import base64
-
-
-class DigitCNN(nn.Module):
-    def __init__(self):
-        super(DigitCNN, self).__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-        )
-        self.fc1 = nn.Linear(64 * 7 * 7, 512)
-        self.fc2 = nn.Linear(512, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = x.view(x.size(0), -1)
-        x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
+from .model_architectures import *
 
 class DigitRecognizer:
-    def __init__(self, model_path=None):
-        self.device = torch.device(
-            'cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = DigitCNN().to(self.device)
+    def __init__(self, model_name='cnn_c16c32_k3_fc10', model_path=None):
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # 根据模型名称选择对应的模型架构
+        model_classes = {
+            'cnn_c16c32_k3_fc10': DigitCNN_C16C32_K3_FC10,
+            'cnn_c32c64_k5_fc512': DigitCNN_C32C64_K5_FC512,
+            'cnn_c32c64c128_k3_fc256': DigitCNN_C32C64C128_K3_FC256,
+            'mlp_512_256_128': DigitMLP_512_256_128
+        }
+        
+        self.model = model_classes[model_name]().to(self.device)
         self.transform = transforms.Compose([
             transforms.Resize((28, 28)),
             transforms.ToTensor(),
@@ -48,8 +31,7 @@ class DigitRecognizer:
         ])
 
         if model_path:
-            self.model.load_state_dict(torch.load(
-                model_path, map_location=self.device))
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.eval()
 
     def train(self, epochs=10, batch_size=64, save_path='digit_model.pth'):

@@ -10,7 +10,6 @@ let isDrawing = false;
 ctx.fillStyle = "white";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-
 // 设置画笔样式
 ctx.strokeStyle = "black";
 ctx.lineWidth = 15;
@@ -36,7 +35,7 @@ function draw(e) {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  
+
   ctx.lineTo(x, y);
   ctx.stroke();
 }
@@ -57,19 +56,85 @@ document.getElementById("clearBtn").addEventListener("click", () => {
 document.getElementById("recognizeBtn").addEventListener("click", async () => {
   // 获取画布数据前确保所有绘制操作已完成
   ctx.closePath();
-  
+
   const imageData = canvas.toDataURL("image/png");
   try {
-      const response = await fetch("/api/recognize", {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ image: imageData }),
-      });
-      const data = await response.json();
-      document.getElementById("result").textContent = data.result;
+    const response = await fetch("/api/recognize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: imageData }),
+    });
+    const data = await response.json();
+    document.getElementById("result").textContent = data.result;
   } catch (error) {
-      console.error("Error:", error);
+    console.error("Error:", error);
   }
+});
+
+// 获取模型信息并填充选择器和性能表格
+async function loadModelInfo() {
+  try {
+    const response = await fetch("/api/models");
+    const models = await response.json();
+
+    const modelSelect = document.getElementById("modelSelect");
+    const modelStats = document.getElementById("modelStats");
+
+    // 填充模型选择器
+    Object.entries(models).forEach(([name, info]) => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = info.description;
+      modelSelect.appendChild(option);
+    });
+
+    // 填充性能对比表格
+    Object.entries(models).forEach(([name, info]) => {
+      const stats = info.stats || {};
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${info.description}</td>
+        <td>${info.type}</td>
+        <td>${stats.best_accuracy ? stats.best_accuracy.toFixed(2) : "N/A"}%</td>
+        <td>${info.parameters.toLocaleString()}</td>
+        <td>${stats.training_time ? stats.training_time.toFixed(2) : "N/A"}s</td>
+      `;
+      modelStats.appendChild(row);
+    });
+  } catch (error) {
+    console.error("Error loading model info:", error);
+  }
+}
+
+// 切换模型
+async function switchModel(modelName) {
+  try {
+    const response = await fetch("/api/switch_model", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model_name: modelName }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      console.log(result.message);
+    } else {
+      console.error(result.error);
+    }
+  } catch (error) {
+    console.error("Error switching model:", error);
+  }
+}
+
+// 页面加载完成后初始化
+document.addEventListener("DOMContentLoaded", () => {
+  loadModelInfo();
+
+  // 监听模型选择变化
+  document.getElementById("modelSelect").addEventListener("change", (e) => {
+    switchModel(e.target.value);
+  });
 });

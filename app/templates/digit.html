@@ -4,33 +4,71 @@
 -->
 {% extends "base.html" %} {% block title %}Digit Recognition{% endblock %} {%
 block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        <h2 class="text-center">Handwritten Digit Recognition</h2>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <canvas
-              id="drawingCanvas"
-              width="280"
-              height="280"
-              class="border"
-            ></canvas>
-            <div class="mt-3 text-center">
-              <button class="btn btn-primary" id="recognizeBtn">
-                Recognize
-              </button>
-              <button class="btn btn-secondary" id="clearBtn">Clear</button>
+<div class="container">
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="text-center mb-0">Handwritten Digit Recognition</h3>
+        </div>
+        <div class="card-body py-4">
+          <div class="row align-items-center">
+            <div class="col-md-6 drawing-section">
+              <div class="canvas-container">
+                <canvas id="drawingCanvas" width="280" height="280"></canvas>
+                <div class="canvas-label">Draw a digit here</div>
+              </div>
+              <div class="mt-4 text-center button-group">
+                <button class="btn btn-primary btn-lg px-4" id="recognizeBtn">
+                  <i class="fas fa-magic me-2"></i>Recognize
+                </button>
+                <button class="btn btn-outline-secondary btn-lg px-4" id="clearBtn">
+                  <i class="fas fa-eraser me-2"></i>Clear
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="result-section">
+                <div class="result-container">
+                  <h3 class="result-label">Recognition Result</h3>
+                  <div id="result" class="result-display">-</div>
+                </div>
+                <div class="model-selector">
+                  <h4 class="model-label">Select Model</h4>
+                  <select id="modelSelect" class="form-select form-select-lg">
+                    <!-- 将由JavaScript填充 -->
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="result-container text-center">
-              <h3>Recognition Result</h3>
-              <div id="result" class="display-1 fw-bold text-primary">-</div>
-            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="text-center">Model Performance Comparison</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Type</th>
+                  <th>Accuracy</th>
+                  <th>Parameters</th>
+                  <th>Training Time</th>
+                </tr>
+              </thead>
+              <tbody id="modelStats">
+                <!-- 将由JavaScript填充 -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

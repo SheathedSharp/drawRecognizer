@@ -1,0 +1,34 @@
+{
+    "cnn_c16c32_k3_fc10": {
+        "training_time": 77.07690095901489,
+        "final_accuracy": 10.67,
+        "best_accuracy": 11.28,
+        "parameters": 20490,
+        "epochs": 5,
+        "batch_size": 64
+    },
+    "cnn_c32c64_k5_fc512": {
+        "training_time": 410.9927890300751,
+        "final_accuracy": 99.17,
+        "best_accuracy": 99.17,
+        "parameters": 1663370,
+        "epochs": 5,
+        "batch_size": 64
+    },
+    "cnn_c32c64c128_k3_fc256": {
+        "training_time": 413.27170157432556,
+        "final_accuracy": 10.86,
+        "best_accuracy": 11.28,
+        "parameters": 390410,
+        "epochs": 5,
+        "batch_size": 64
+    },
+    "mlp_512_256_128": {
+        "training_time": 35.24366593360901,
+        "final_accuracy": 98.04,
+        "best_accuracy": 98.04,
+        "parameters": 567434,
+        "epochs": 5,
+        "batch_size": 64
+    }
+}
