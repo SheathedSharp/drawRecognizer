@@ -40,7 +40,7 @@ class DigitModelManager:
             }
         }
         # 加载训练统计信息
-        stats_path = os.path.join(Config.DIGIT_MODEL_DIR, 'training_stats.json')
+        stats_path = os.path.join(Config.DIGIT_MODEL_DIR, 'digit_training_stats.json')
         if os.path.exists(stats_path):
             with open(stats_path, 'r') as f:
                 self.model_stats = json.load(f)

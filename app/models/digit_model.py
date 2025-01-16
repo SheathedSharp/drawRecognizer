@@ -16,7 +16,7 @@ import base64
 from .digit_architectures import *
 
 class DigitRecognizer:
-    def __init__(self, model_name='cnn_c16c32_k3_fc10', model_path=None):
+    def __init__(self, model_name=None, model_path=None):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # 根据模型名称选择对应的模型架构

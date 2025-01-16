@@ -9,26 +9,30 @@ from config import Config
 import os
 
 digit_bp = Blueprint('digit', __name__)
+
+def init_model_status():
+    models_status = model_manager.check_models_status()
+    if not os.environ.get('WERKZEUG_RUN_MAIN'):  # 只在主进程中打印
+        print("\n=== Digit Recognition Models Status ===")
+        for model_name, status in models_status.items():
+            print(f"\nModel: {model_name}")
+            print(f"- Status: {'Available' if status['exists'] else 'Not Found'}")
+            print(f"- Type: {status['type']}")
+            print(f"- Description: {status['description']}")
+            if status.get('accuracy'):
+                print(f"- Best Accuracy: {status['accuracy']}%")
+    return models_status
+
+def get_recognizer():
+    default_model_name = 'cnn_c32c64_k5_fc512'
+    model_config = Config.DIGIT_MODEL_CONFIGS[default_model_name]
+    model_path = model_config['path']
+    return DigitRecognizer(model_name=default_model_name, model_path=model_path)
+
+# 初始化全局变量
 model_manager = DigitModelManager()
-
-# 检查所有模型的状态
-models_status = model_manager.check_models_status()
-print("\n=== Digit Recognition Models Status ===")
-for model_name, status in models_status.items():
-    print(f"\nModel: {model_name}")
-    print(f"- Status: {'Available' if status['exists'] else 'Not Found'}")
-    print(f"- Type: {status['type']}")
-    print(f"- Description: {status['description']}")
-    if status.get('accuracy'):
-        print(f"- Best Accuracy: {status['accuracy']}%")
-
-# 默认使用手写数字第一个模型
-default_model_name = list(Config.DIGIT_MODEL_CONFIGS.keys())[0]
-model_config = Config.DIGIT_MODEL_CONFIGS[default_model_name]
-model_path = model_config['path']
-
-
-recognizer = DigitRecognizer(model_path=model_path)
+models_status = init_model_status()
+recognizer = get_recognizer()
 
 @digit_bp.route('/digit')
 def digit_page():
@@ -60,13 +64,14 @@ def train_model():
 def get_models():
     models_info = {}
     for model_name in model_manager.models.keys():
-        model_info = model_manager.get_model_info(model_name)
-        models_info[model_name] = {
-            'description': model_info['description'],
-            'type': model_info['type'],
-            'parameters': model_info['parameters'],
-            'stats': model_manager.model_stats.get(model_name, {})
-        }
+        if model_name in model_manager.model_stats:
+            model_info = model_manager.get_model_info(model_name)
+            models_info[model_name] = {
+                'description': model_info['description'],
+                'type': model_info['type'],
+                'parameters': model_info['parameters'],
+                'stats': model_manager.model_stats.get(model_name, {})
+            }
     return jsonify(models_info)
 
 @digit_bp.route('/api/switch_model', methods=['POST'])
