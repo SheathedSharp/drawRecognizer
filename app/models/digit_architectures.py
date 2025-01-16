@@ -7,29 +7,24 @@ class DigitCNN_C16C32_K3_FC10(nn.Module):
     2层CNN架构 (16->32通道, 3x3卷积核)
     - Conv1: 1->16 channels, 3x3 kernel
     - Conv2: 16->32 channels, 3x3 kernel
-    - FC: 32*7*7->10
+    - FC: 32*7*7->64->10
     """
 
     def __init__(self):
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(1, 16, kernel_size=3, padding=1),
-            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(0.1),
             
             nn.Conv2d(16, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(0.1)
         )
         self.classifier = nn.Sequential(
-            nn.Linear(32 * 7 * 7, 128),
+            nn.Linear(32 * 7 * 7, 64),
             nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(128, 10)
+            nn.Linear(64, 10)
         )
 
     def forward(self, x):
@@ -53,6 +48,7 @@ class DigitCNN_C32C64_K5_FC512(nn.Module):
             nn.Conv2d(1, 32, kernel_size=5, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            
             nn.Conv2d(32, 64, kernel_size=5, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(2)
@@ -85,15 +81,17 @@ class DigitCNN_C32C64C128_K3_FC256(nn.Module):
             nn.Conv2d(1, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(2)
         )
         self.classifier = nn.Sequential(
-            nn.Linear(128 * 3 * 3, 256),
+            nn.Linear(128 * 7 * 7, 256),
             nn.ReLU(),
             nn.Linear(256, 10)
         )

@@ -61,14 +61,8 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         optimizer.zero_grad()
         outputs = model(images)
         
-        # 使用log_softmax和NLL_loss替代普通的交叉熵
         log_probs = nn.functional.log_softmax(outputs, dim=1)
         loss = nn.functional.nll_loss(log_probs, labels)
-        
-        # 检查loss是否为有限值
-        if not np.isfinite(loss.item()):
-            print(f"Warning: Loss is not finite! Skipping batch {batch_idx}")
-            continue
             
         loss.backward()
         
@@ -82,7 +76,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
         
-        if (batch_idx + 1) % 50 == 0:
+        if (batch_idx + 1) % 100 == 0:
             print(f'Batch [{batch_idx+1}/{len(train_loader)}], '
                   f'Loss: {loss.item():.4f}, '
                   f'Accuracy: {100 * correct/total:.2f}%')
@@ -97,11 +91,10 @@ def validate(model, test_loader, criterion, device):
     total = 0
     
     with torch.no_grad():
-        for images, labels in test_loader:  # 添加缺失的for循环
+        for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             
-            # 使用log_softmax和NLL_loss替代普通的交叉熵，可以提供更好的数值稳定性
             log_probs = nn.functional.log_softmax(outputs, dim=1)
             loss = nn.functional.nll_loss(log_probs, labels)
             
@@ -110,15 +103,7 @@ def validate(model, test_loader, criterion, device):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     
-    avg_loss = total_loss / len(test_loader)
-    avg_acc = 100 * correct / total
-    
-    # 添加loss值的检查
-    if not np.isfinite(avg_loss):
-        print("Warning: Loss is not finite!")
-        avg_loss = float('inf')
-    
-    return avg_loss, avg_acc
+    return total_loss / len(test_loader), 100 * correct / total
 
 def train_digit_models(model_names=None):
     """
@@ -150,12 +135,16 @@ def train_digit_models(model_names=None):
         
         model = manager.models[model_name]().to(device)
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=Config.DIGIT_LEARNING_RATE, weight_decay=1e-4)
+        optimizer = optim.Adam(
+            model.parameters(), 
+            lr=Config.DIGIT_LEARNING_RATE, 
+            weight_decay=1e-5
+        )
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, 
-            mode='max', 
-            factor=0.2, 
-            patience=3,
+            mode='min', 
+            factor=0.5, 
+            patience=5,
             verbose=True
         )
         

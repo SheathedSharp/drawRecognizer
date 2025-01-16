@@ -18,9 +18,9 @@ class Config:
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # 手写数字训练参数
-    DIGIT_EPOCHS = 50
-    DIGIT_BATCH_SIZE = 256
-    DIGIT_LEARNING_RATE = 0.00001
+    DIGIT_EPOCHS = 20
+    DIGIT_BATCH_SIZE = 128
+    DIGIT_LEARNING_RATE = 1e-4
 
     # 手写数字模型配置
     DIGIT_MODEL_CONFIGS = {
