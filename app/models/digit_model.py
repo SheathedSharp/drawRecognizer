@@ -1,3 +1,7 @@
+'''
+Author: SheathedSharp z404878860@163.com
+Date: 2025-01-12 18:35:40
+'''
 import traceback
 import torch
 import torch.nn as nn
@@ -9,7 +13,7 @@ import numpy as np
 from PIL import Image
 import io
 import base64
-from .model_architectures import *
+from .digit_architectures import *
 
 class DigitRecognizer:
     def __init__(self, model_name='cnn_c16c32_k3_fc10', model_path=None):
@@ -33,81 +37,7 @@ class DigitRecognizer:
         if model_path:
             self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.eval()
-
-    def train(self, epochs=10, batch_size=64, save_path='digit_model.pth'):
-        # 加载MNIST数据集
-        train_dataset = torchvision.datasets.MNIST(
-            root='./data',
-            train=True,
-            transform=self.transform,
-            download=True
-        )
-        test_dataset = torchvision.datasets.MNIST(
-            root='./data',
-            train=False,
-            transform=self.transform,
-            download=True
-        )
-
-        train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(
-            test_dataset, batch_size=batch_size, shuffle=False)
-
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.model.parameters())
-        best_acc = 0.0
-
-        for epoch in range(epochs):
-            # Training phase
-            self.model.train()
-            running_loss = 0.0
-            correct = 0
-            total = 0
-
-            for i, (images, labels) in enumerate(train_loader):
-                images, labels = images.to(self.device), labels.to(self.device)
-
-                optimizer.zero_grad()
-                outputs = self.model(images)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-
-                running_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-                if (i + 1) % 100 == 0:
-                    print(f'Epoch [{epoch+1}/{epochs}], Step [{i+1}/{len(train_loader)}], '
-                          f'Loss: {running_loss/100:.4f}, '
-                          f'Accuracy: {100 * correct/total:.2f}%')
-                    running_loss = 0.0
-
-            # Validation phase
-            self.model.eval()
-            correct = 0
-            total = 0
-            with torch.no_grad():
-                for images, labels in test_loader:
-                    images, labels = images.to(
-                        self.device), labels.to(self.device)
-                    outputs = self.model(images)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
-
-            acc = 100 * correct / total
-            print(f'Validation Accuracy: {acc:.2f}%')
-
-            if acc > best_acc:
-                best_acc = acc
-                torch.save(self.model.state_dict(), save_path)
-                print(f'Model saved with accuracy: {best_acc:.2f}%')
-
-        print('Training finished!')
-
+        
     def preprocess_image(self, image_data):
         try:
             # 移除base64头部信息

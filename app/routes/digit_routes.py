@@ -4,32 +4,29 @@ Date: 2025-01-12 12:43:52
 '''
 from flask import Blueprint, render_template, jsonify, request
 from app.models.digit_model import DigitRecognizer
-from app.models.model_manager import ModelManager
+from app.models.model_manager import DigitModelManager
 from config import Config
 import os
 
 digit_bp = Blueprint('digit', __name__)
-model_manager = ModelManager()
+model_manager = DigitModelManager()
 
-# 默认使用第一个模型
-default_model_name = list(Config.MODEL_CONFIGS.keys())[0]
-model_config = Config.MODEL_CONFIGS[default_model_name]
+# 检查所有模型的状态
+models_status = model_manager.check_models_status()
+print("\n=== Digit Recognition Models Status ===")
+for model_name, status in models_status.items():
+    print(f"\nModel: {model_name}")
+    print(f"- Status: {'Available' if status['exists'] else 'Not Found'}")
+    print(f"- Type: {status['type']}")
+    print(f"- Description: {status['description']}")
+    if status.get('accuracy'):
+        print(f"- Best Accuracy: {status['accuracy']}%")
+
+# 默认使用手写数字第一个模型
+default_model_name = list(Config.DIGIT_MODEL_CONFIGS.keys())[0]
+model_config = Config.DIGIT_MODEL_CONFIGS[default_model_name]
 model_path = model_config['path']
 
-# 如果模型文件不存在，训练新模型
-if not os.path.exists(model_path):
-    print(f"Training new model {default_model_name}...")
-    model = model_manager.models[default_model_name]()
-    model_manager.train_model(
-        model_name=default_model_name,
-        model=model,
-        save_path=model_path,
-        epochs=model_config['epochs'],
-        batch_size=model_config['batch_size'],
-        learning_rate=model_config['learning_rate']
-    )
-else:
-    print(f"Loading existing model {default_model_name}...")
 
 recognizer = DigitRecognizer(model_path=model_path)
 
@@ -80,7 +77,7 @@ def switch_model():
     if model_name not in model_manager.models:
         return jsonify({'error': 'Invalid model name'}), 400
         
-    model_path = Config.MODEL_CONFIGS[model_name]['path']
+    model_path = Config.DIGIT_MODEL_CONFIGS[model_name]['path']
     if not os.path.exists(model_path):
         return jsonify({'error': 'Model file not found'}), 404
         

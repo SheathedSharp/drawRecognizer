@@ -2,20 +2,22 @@
 Author: SheathedSharp z404878860@163.com
 Date: 2025-01-12 12:44:16
 '''
-from flask import Blueprint, render_template, jsonify, request
-# from app.models.sketch_model import SketchRetriever
+from flask import Blueprint, jsonify, request, send_file
+from app.models.sketch_model import SketchRetriever
+import os
 
 sketch_bp = Blueprint('sketch', __name__)
-# sketch_model = SketchRetriever()
+# retriever = SketchRetriever()
 
-@sketch_bp.route('/sketch')
-def sketch_page():
-    return render_template('sketch.html')
+# # 初始化时构建图库
+# gallery_dir = 'app/static/gallery'
+# retriever.build_gallery(gallery_dir)
 
 @sketch_bp.route('/api/retrieve', methods=['POST'])
-def retrieve_sketch():
-    if 'sketch' not in request.files:
+def retrieve_similar():
+    data = request.get_json()
+    if 'sketch' not in data:
         return jsonify({'error': 'No sketch provided'}), 400
     
-    # Add retrieval logic here
-    return jsonify({'results': 'Retrieval results'})
+    results = retriever.retrieve(data['sketch'])
+    return jsonify({'results': results})

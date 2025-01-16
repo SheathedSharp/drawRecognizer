@@ -60,8 +60,27 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
 });
 
 function displayResults(results) {
-  const resultsContainer = document.getElementById("results");
-  resultsContainer.innerHTML = ""; // Clear previous results
-
-  // Add your result display logic here
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = '';
+  
+  results.forEach(result => {
+      const col = document.createElement("div");
+      col.className = "col-md-4 mb-3";
+      
+      const card = document.createElement("div");
+      card.className = "card h-100";
+      
+      const img = document.createElement("img");
+      img.className = "card-img-top";
+      img.src = result.path.replace('app/static', '');
+      
+      const cardBody = document.createElement("div");
+      cardBody.className = "card-body";
+      cardBody.innerHTML = `<p class="card-text">Similarity: ${result.similarity}</p>`;
+      
+      card.appendChild(img);
+      card.appendChild(cardBody);
+      col.appendChild(card);
+      resultsDiv.appendChild(col);
+  });
 }

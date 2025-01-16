@@ -1,0 +1,10 @@
+{
+    "cnn_c16c32_k3_fc10": {
+        "training_time": 224.13006901741028,
+        "final_accuracy": 11.31,
+        "best_accuracy": 11.38,
+        "parameters": 20490,
+        "epochs": 50,
+        "batch_size": 256
+    }
+}
