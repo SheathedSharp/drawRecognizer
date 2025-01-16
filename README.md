@@ -17,9 +17,9 @@ This is a Flask-based web application that provides two main functionalities:
 ## Installation
 1. Clone the repository: `git clone https://github.com/...`
 2. Install dependencies: `pip install -r requirements.txt` or `conda env create -f environment.yml`
-3. Run `python -m app.train.train_digit` to train the digit models, you can specify the models to train, e.g.: `python -m app.train.train_digit cnn_c16c32_k3_fc10 mlp_512_256_128`
+3. Run `python -m app.train.train_digit` to train the digit models, you can specify the models to train, e.g.: `python -m app.train.train_digit --model=cnn_c16c32_k3_fc10 mlp_512_256_128`, you can just run `python -m app.train.train_digit --model=DigitCNN_C32C64_K5_FC512` to train best model because `DigitCNN_C16C32_K3_FC10` is too simple to train(network is too simple) and `DigitCNN_C32C64C128_K3_FC256` is too complex to train(there aren't enough data to train).
 4. Run `python -m app.train.train_sketch` to train the sketch models
-4. Run the application: `python run.py`
+5. Run the application: `python run.py`
 
 ## Project Structure
 - /app: Main application directory
