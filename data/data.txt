@@ -1,1 +1,2 @@
-the data will be saved in the data/MNIST/raw/data.txt file
+the digit data will be saved in the data/MNIST folder
+the sketch data will be saved in the data/Sketchy folder

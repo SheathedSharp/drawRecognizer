@@ -9,9 +9,9 @@ class Config:
     # 基础路径配置
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     MODEL_DIR = os.path.join(BASE_DIR, 'app', 'trained_models')
-    GALLERY_DIR = os.path.join(BASE_DIR, 'app', 'static', 'gallery')
     DIGIT_MODEL_DIR = os.path.join(MODEL_DIR, 'digit_models')
     SKETCH_MODEL_DIR = os.path.join(MODEL_DIR, 'sketch_models')
+    DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 
     # 通用配置
@@ -37,3 +37,12 @@ class Config:
             'path': os.path.join(DIGIT_MODEL_DIR, 'mlp_512_256_128.pth'),
         }
     }
+    
+    # Sketchy Database 配置
+    SKETCHY_SKETCH_DIR = os.path.join(DATA_DIR, 'Sketchy', 'sketch', 'tx_000000000000')
+    SKETCHY_PHOTO_DIR = os.path.join(DATA_DIR, 'Sketchy', 'photo', 'tx_000000000000')
+    SKETCHY_FEATURE_DIM = 512
+    SKETCHY_TRIPLET_MARGIN = 0.3
+    SKETCHY_LEARNING_RATE = 0.0001
+    SKETCHY_BATCH_SIZE = 256
+    SKETCHY_EPOCHS = 5

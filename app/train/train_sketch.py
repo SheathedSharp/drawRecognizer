@@ -15,46 +15,55 @@ from PIL import Image
 from app.models.sketch_architectures import SketchResNet50, TripletLoss
 from config import Config
 
-class SketchDataset(Dataset):
-    """草图数据集加载器"""
-    def __init__(self, data_dir, transform=None):
-        self.data_dir = data_dir
+class SketchyDataset(Dataset):
+    """Sketchy Database 数据集加载器"""
+    def __init__(self, sketch_dir, photo_dir, transform=None):
+        self.sketch_dir = sketch_dir
+        self.photo_dir = photo_dir
         self.transform = transform
-        self.classes = os.listdir(data_dir)
-        self.image_paths = []
         
-        # 构建三元组数据
-        for class_name in self.classes:
-            class_dir = os.path.join(data_dir, class_name)
-            images = os.listdir(class_dir)
-            for img in images:
-                self.image_paths.append((os.path.join(class_dir, img), class_name))
+        # 获取所有类别
+        self.classes = [d for d in os.listdir(sketch_dir) 
+                       if os.path.isdir(os.path.join(sketch_dir, d))]
+        
+        # 构建图像路径对
+        self.pairs = []
+        for cls in self.classes:
+            sketch_cls_dir = os.path.join(sketch_dir, cls)
+            photo_cls_dir = os.path.join(photo_dir, cls)
+            
+            sketches = [f for f in os.listdir(sketch_cls_dir) if f.endswith('.png')]
+            photos = [f for f in os.listdir(photo_cls_dir) if f.endswith('.jpg')]
+            
+            for sketch in sketches:
+                sketch_path = os.path.join(sketch_cls_dir, sketch)
+                # 为每个草图找到对应的照片
+                photo_path = os.path.join(photo_cls_dir, photos[0])  # 简单起见，使用第一张照片
+                self.pairs.append((sketch_path, photo_path, cls))
     
     def __len__(self):
-        return len(self.image_paths)
+        return len(self.pairs)
     
     def __getitem__(self, idx):
-        img_path, class_name = self.image_paths[idx]
-        # 加载锚点图像
-        anchor = Image.open(img_path).convert('RGB')
-        if self.transform:
-            anchor = self.transform(anchor)
-            
-        # 获取同类别的正样本
-        pos_paths = [p for p, c in self.image_paths if c == class_name and p != img_path]
-        pos_path = random.choice(pos_paths)
-        positive = Image.open(pos_path).convert('RGB')
-        if self.transform:
-            positive = self.transform(positive)
-            
-        # 获取不同类别的负样本
-        neg_paths = [p for p, c in self.image_paths if c != class_name]
-        neg_path = random.choice(neg_paths)
+        sketch_path, photo_path, cls = self.pairs[idx]
+        
+        # 加载草图和照片
+        sketch = Image.open(sketch_path).convert('RGB')
+        photo = Image.open(photo_path).convert('RGB')
+        
+        # 随机选择一个不同类别的负样本
+        neg_cls = random.choice([c for c in self.classes if c != cls])
+        neg_dir = os.path.join(self.photo_dir, neg_cls)
+        neg_photos = os.listdir(neg_dir)
+        neg_path = os.path.join(neg_dir, random.choice(neg_photos))
         negative = Image.open(neg_path).convert('RGB')
+        
         if self.transform:
+            sketch = self.transform(sketch)
+            photo = self.transform(photo)
             negative = self.transform(negative)
             
-        return anchor, positive, negative
+        return sketch, photo, negative
 
 def create_data_loader():
     """创建数据加载器"""
@@ -65,10 +74,10 @@ def create_data_loader():
                            std=[0.229, 0.224, 0.225])
     ])
     
-    train_dataset = SketchDataset(Config.SKETCH_TRAIN_DIR, transform=transform)
+    train_dataset = SketchyDataset(Config.SKETCHY_SKETCH_DIR, Config.SKETCHY_PHOTO_DIR, transform=transform)
     train_loader = DataLoader(
         train_dataset,
-        batch_size=Config.BATCH_SIZE,
+        batch_size=Config.SKETCHY_BATCH_SIZE,
         shuffle=True,
         num_workers=4
     )
@@ -101,42 +110,72 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     
     return total_loss / len(train_loader)
 
-def train_sketch_model():
+def train_sketchy_model():
     """训练主函数"""
     device = torch.device(Config.DEVICE)
-    model = SketchResNet50(feature_dim=Config.FEATURE_DIM).to(device)
+    model = SketchResNet50(feature_dim=Config.SKETCHY_FEATURE_DIM).to(device)
     
-    train_loader = create_data_loader()
-    criterion = TripletLoss(margin=Config.TRIPLET_MARGIN)
-    optimizer = optim.Adam(model.parameters(), lr=Config.LEARNING_RATE)
+    # 数据转换
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                           std=[0.229, 0.224, 0.225])
+    ])
     
-    stats = {
-        'training_time': 0,
-        'best_loss': float('inf'),
-        'parameters': sum(p.numel() for p in model.parameters())
-    }
+    # 创建数据集
+    train_dataset = SketchyDataset(
+        sketch_dir=Config.SKETCHY_SKETCH_DIR,
+        photo_dir=Config.SKETCHY_PHOTO_DIR,
+        transform=transform
+    )
     
-    start_time = time.time()
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=Config.SKETCHY_BATCH_SIZE,
+        shuffle=True,
+        num_workers=4
+    )
     
-    for epoch in range(Config.SKETCH_EPOCHS):
-        print(f'\nEpoch {epoch+1}/{Config.SKETCH_EPOCHS}')
-        avg_loss = train_epoch(model, train_loader, criterion, optimizer, device)
+    criterion = TripletLoss(margin=Config.SKETCHY_TRIPLET_MARGIN)
+    optimizer = optim.Adam(model.parameters(), lr=Config.SKETCHY_LEARNING_RATE)
+    
+    # 训练循环
+    for epoch in range(Config.SKETCHY_EPOCHS):
+        model.train()
+        total_loss = 0
         
-        print(f'Average Loss: {avg_loss:.4f}')
+        for batch_idx, (sketch, photo, negative) in enumerate(train_loader):
+            sketch = sketch.to(device)
+            photo = photo.to(device)
+            negative = negative.to(device)
+            
+            optimizer.zero_grad()
+            
+            # 提取特征
+            sketch_features = model(sketch)
+            photo_features = model(photo)
+            negative_features = model(negative)
+            
+            # 计算损失
+            loss = criterion(sketch_features, photo_features, negative_features)
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            
+            if (batch_idx + 1) % 10 == 0:
+                print(f'Epoch [{epoch+1}/{Config.SKETCH_EPOCHS}] '
+                      f'Batch [{batch_idx+1}/{len(train_loader)}] '
+                      f'Loss: {loss.item():.4f}')
         
-        if avg_loss < stats['best_loss']:
-            stats['best_loss'] = avg_loss
-            torch.save(model.state_dict(), Config.SKETCH_MODEL_PATH)
-            print(f'Model saved with loss: {avg_loss:.4f}')
-    
-    stats['training_time'] = time.time() - start_time
-    
-    # 保存训练统计信息
-    stats_path = os.path.join(Config.SKETCH_MODEL_DIR, 'sketch_training_stats.json')
-    with open(stats_path, 'w') as f:
-        json.dump(stats, f, indent=4)
-    
-    print('Training completed!')
+        avg_loss = total_loss / len(train_loader)
+        print(f'Epoch [{epoch+1}/{Config.SKETCH_EPOCHS}] Average Loss: {avg_loss:.4f}')
+        
+        # 保存模型
+        if (epoch + 1) % 5 == 0:
+            torch.save(model.state_dict(), 
+                      os.path.join(Config.SKETCH_MODEL_DIR, f'sketch_model_epoch_{epoch+1}.pth'))
 
 if __name__ == '__main__':
-    train_sketch_model()
+    train_sketchy_model()
