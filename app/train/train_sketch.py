@@ -114,11 +114,16 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
 
 def print_gpu_utilization():
     """打印GPU使用情况"""
-    import nvidia_smi
-    nvidia_smi.nvmlInit()
-    handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-    info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-    print(f"GPU memory occupied: {info.used//1024**2} MB.")
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        print(f"GPU memory occupied: {info.used//1024**2} MB.")
+    except ImportError:
+        print("pynvml not installed. Install with: pip install pynvml")
+    except Exception as e:
+        print(f"Error getting GPU utilization: {e}")
 
 def train_sketchy_model():
     """训练主函数"""
@@ -129,8 +134,8 @@ def train_sketchy_model():
     scaler = torch.cuda.amp.GradScaler()
     
     train_loader = create_data_loader()
-    criterion = TripletLoss(margin=Config.TRIPLET_MARGIN)
-    optimizer = optim.Adam(model.parameters(), lr=Config.LEARNING_RATE)
+    criterion = TripletLoss(margin=Config.SKETCHY_TRIPLET_MARGIN)
+    optimizer = optim.Adam(model.parameters(), lr=Config.SKETCHY_LEARNING_RATE)
     
     for epoch in range(Config.SKETCHY_EPOCHS):
         model.train()
