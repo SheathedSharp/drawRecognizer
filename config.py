@@ -15,7 +15,7 @@ class Config:
 
 
     # 通用配置
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     # 手写数字训练参数
     DIGIT_EPOCHS = 20

@@ -79,7 +79,9 @@ def create_data_loader():
         train_dataset,
         batch_size=Config.SKETCHY_BATCH_SIZE,
         shuffle=True,
-        num_workers=4
+        num_workers=8,
+        pin_memory=True,
+        persistent_workers=True
     )
     return train_loader
 
@@ -110,37 +112,26 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     
     return total_loss / len(train_loader)
 
+def print_gpu_utilization():
+    """打印GPU使用情况"""
+    import nvidia_smi
+    nvidia_smi.nvmlInit()
+    handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+    info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+    print(f"GPU memory occupied: {info.used//1024**2} MB.")
+
 def train_sketchy_model():
     """训练主函数"""
     device = torch.device(Config.DEVICE)
     model = SketchResNet50(feature_dim=Config.SKETCHY_FEATURE_DIM).to(device)
     
-    # 数据转换
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                           std=[0.229, 0.224, 0.225])
-    ])
+    # 创建 scaler 用于混合精度训练
+    scaler = torch.cuda.amp.GradScaler()
     
-    # 创建数据集
-    train_dataset = SketchyDataset(
-        sketch_dir=Config.SKETCHY_SKETCH_DIR,
-        photo_dir=Config.SKETCHY_PHOTO_DIR,
-        transform=transform
-    )
+    train_loader = create_data_loader()
+    criterion = TripletLoss(margin=Config.TRIPLET_MARGIN)
+    optimizer = optim.Adam(model.parameters(), lr=Config.LEARNING_RATE)
     
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=Config.SKETCHY_BATCH_SIZE,
-        shuffle=True,
-        num_workers=4
-    )
-    
-    criterion = TripletLoss(margin=Config.SKETCHY_TRIPLET_MARGIN)
-    optimizer = optim.Adam(model.parameters(), lr=Config.SKETCHY_LEARNING_RATE)
-    
-    # 训练循环
     for epoch in range(Config.SKETCHY_EPOCHS):
         model.train()
         total_loss = 0
@@ -152,25 +143,30 @@ def train_sketchy_model():
             
             optimizer.zero_grad()
             
-            # 提取特征
-            sketch_features = model(sketch)
-            photo_features = model(photo)
-            negative_features = model(negative)
+            # 使用自动混合精度
+            with torch.cuda.amp.autocast():
+                sketch_features = model(sketch)
+                photo_features = model(photo)
+                negative_features = model(negative)
+                loss = criterion(sketch_features, photo_features, negative_features)
             
-            # 计算损失
-            loss = criterion(sketch_features, photo_features, negative_features)
-            loss.backward()
-            optimizer.step()
+            # 使用 scaler 进行反向传播
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             
             total_loss += loss.item()
             
             if (batch_idx + 1) % 10 == 0:
-                print(f'Epoch [{epoch+1}/{Config.SKETCH_EPOCHS}] '
+                print(f'Epoch [{epoch+1}/{Config.SKETCHY_EPOCHS}] '
                       f'Batch [{batch_idx+1}/{len(train_loader)}] '
                       f'Loss: {loss.item():.4f}')
+            
+            if (batch_idx + 1) % 50 == 0:
+                print_gpu_utilization()
         
         avg_loss = total_loss / len(train_loader)
-        print(f'Epoch [{epoch+1}/{Config.SKETCH_EPOCHS}] Average Loss: {avg_loss:.4f}')
+        print(f'Epoch [{epoch+1}/{Config.SKETCHY_EPOCHS}] Average Loss: {avg_loss:.4f}')
         
         # 保存模型
         if (epoch + 1) % 5 == 0:
