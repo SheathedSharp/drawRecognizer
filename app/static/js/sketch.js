@@ -65,22 +65,17 @@ function displayResults(results) {
   
   results.forEach(result => {
       const col = document.createElement("div");
-      col.className = "col-md-4 mb-3";
-      
-      const card = document.createElement("div");
-      card.className = "card h-100";
+      col.className = "col-md-4";
       
       const img = document.createElement("img");
-      img.className = "card-img-top";
-      img.src = result.path.replace('app/static', '');
+      img.src = result.path;
+      img.className = "img-fluid";
       
-      const cardBody = document.createElement("div");
-      cardBody.className = "card-body";
-      cardBody.innerHTML = `<p class="card-text">Similarity: ${result.similarity}</p>`;
+      const similarity = document.createElement("p");
+      similarity.textContent = `Similarity: ${result.similarity}`;
       
-      card.appendChild(img);
-      card.appendChild(cardBody);
-      col.appendChild(card);
+      col.appendChild(img);
+      col.appendChild(similarity);
       resultsDiv.appendChild(col);
   });
 }
