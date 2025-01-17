@@ -33,3 +33,7 @@ This is a Flask-based web application that provides two main functionalities:
 ## Usage
 1. Access the digit recognition page at: http://localhost:5000/digit
 2. Access the sketch retrieval page at: http://localhost:5000/sketch
+
+## Snapshot
+![digit](./snap/digit.png)
+![sketch](./snap/sketch.png)
