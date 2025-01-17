@@ -49,16 +49,6 @@ def recognize_digit():
         return jsonify({'error': 'Recognition failed'}), 400
     
     return jsonify({'result': str(result)})
-
-@digit_bp.route('/api/train', methods=['POST'])
-def train_model():
-    try:
-        recognizer.train(epochs=5, save_path=model_path)
-        return jsonify({'message': 'Training completed successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-    
     
 @digit_bp.route('/api/models', methods=['GET'])
 def get_models():
